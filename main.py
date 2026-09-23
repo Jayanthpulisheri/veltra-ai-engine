@@ -1,165 +1,193 @@
 import os
+import re
 import json
 import subprocess
-import time
 from dotenv import load_dotenv
 from groq import Groq
 
+# Attempt to load json_repair for handling unescaped LLM outputs gracefully
+try:
+    from json_repair import repair_json
+    HAS_JSON_REPAIR = True
+except ImportError:
+    HAS_JSON_REPAIR = False
+
+# Load environment variables
 load_dotenv()
-api_key = os.getenv("GROQ_API_KEY")
 
-if not api_key:
-    raise ValueError("GROQ_API_KEY is missing in .env!")
+# Initialize Groq Client
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    print("[Error] GROQ_API_KEY environment variable not set.")
+    exit(1)
 
-client = Groq(api_key=api_key)
+client = Groq(api_key=GROQ_API_KEY)
 
-SYSTEM_PROMPT = """You are Veltra AI, an enterprise-grade autonomous software and VFX execution engine.
-You accomplish multi-step technical workflows, system administration, code generation, and media asset production cleanly and safely.
+# Log file setup
+AUDIT_LOG_FILE = "veltra_audit.log"
 
-You operate in an autonomous loop using valid JSON actions:
+def log_audit(event_type: str, details: str):
+    """Appends security and execution events to a local audit log."""
+    with open(AUDIT_LOG_FILE, "a") as f:
+        f.write(f"[{event_type}] {details}\n")
 
-1. Execute Shell Command:
-{"action": "COMMAND", "command": "bash_command", "thought": "reasoning"}
+# Destructive command patterns to block
+BLOCKED_PATTERNS = [
+    r"rm\s+-rf\s+/",
+    r"rm\s+-rf\s+\*",
+    r"mkfs",
+    r"dd\s+if=",
+    r">:?\s*/dev/sd",
+    r"cat\s+/etc/passwd",
+    r"chmod\s+-R\s+777\s+/"
+]
 
-2. Write/Overwrite File:
-{"action": "FILE_WRITE", "filepath": "path/to/file", "content": "file_content", "thought": "reasoning"}
+def is_command_safe(command_str: str) -> tuple[bool, str]:
+    """
+    Splits chained commands (&&, ;, |) and evaluates each sub-command 
+    against blocked regex security patterns.
+    """
+    sub_commands = re.split(r'&&|;|\|', command_str)
+    for sub_cmd in sub_commands:
+        clean_cmd = sub_cmd.strip()
+        for pattern in BLOCKED_PATTERNS:
+            if re.search(pattern, clean_cmd, re.IGNORECASE):
+                return False, clean_cmd
+    return True, ""
 
-3. Chat Response to User:
-{"action": "CHAT", "message": "message_text", "thought": "reasoning"}
-
-4. Complete Task:
-{"action": "COMPLETE", "summary": "final_summary", "thought": "reasoning"}
-
-OUTPUT FORMAT RULE: Provide ONLY valid raw JSON without markdown code blocks."""
-
-print("=" * 60)
-print("   VELTRA AI ENGINE v1.0 MVP - PROTOTYPE PRODUCTION READY")
-print("   System Architecture: Autonomous Loop | Guardrails | Audit Log")
-print("=" * 60 + "\n")
-
-
-def log_audit(entry):
-    entry["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    with open("veltra_audit.log", "a") as log_file:
-        log_file.write(json.dumps(entry) + "\n")
-
-
-def is_safe_command(cmd):
-    dangerous_patterns = ["rm -rf /", "mkfs", "dd if=", ":(){:|:&};:"]
-    return not any(p in cmd for p in dangerous_patterns)
-
-
-def parse_and_execute(response_text):
+def execute_shell_command(command_str: str) -> str:
+    """Executes validated shell commands securely via subprocess."""
     try:
-        clean_text = response_text.strip()
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:]
-        if clean_text.startswith("```"):
-            clean_text = clean_text[3:]
-        if clean_text.endswith("```"):
-            clean_text = clean_text[:-3]
-
-        data = json.loads(clean_text.strip())
-        action = data.get("action")
-        thought = data.get("thought", "No thought provided.")
-
-        print(f"\n[Veltra Thought] > {thought}")
-        log_audit({"action": action, "thought": thought})
-
-        if action == "CHAT":
-            msg = data.get("message")
-            print(f"[Veltra AI] > {msg}")
-            return "USER_INPUT_REQUIRED", None
-
-        elif action == "COMPLETE":
-            summary = data.get("summary")
-            print(f"\n[Task Complete] > {summary}")
-            log_audit({"status": "COMPLETE", "summary": summary})
-            return "FINISHED", None
-
-        elif action == "COMMAND":
-            cmd = data.get("command")
-            if not is_safe_command(cmd):
-                print(f"[Safety Sandbox Violation] > Blocked dangerous command: {cmd}")
-                log_audit({"status": "BLOCKED", "command": cmd})
-                return (
-                    "CONTINUE",
-                    f'Security Alert: Command "{cmd}" blocked by execution guardrails.',
-                )
-
-            print(f"[Action: Command] > {cmd}")
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=30
-            )
-            output = (
-                result.stdout or result.stderr or "Command completed with no output."
-            )
-            print(f"[Execution Output] >\n{output.strip()}")
-            log_audit({"status": "EXECUTED", "command": cmd, "output": output.strip()})
-            return "CONTINUE", f"System Output:\n{output.strip()}"
-
-        elif action == "FILE_WRITE":
-            filepath = data.get("filepath")
-            content = data.get("content")
-            print(f"[Action: Writing File] > {filepath}")
-            with open(filepath, "w") as f:
-                f.write(content)
-            print(f"[File Status] > Successfully written: {filepath}")
-            log_audit({"status": "FILE_WRITE", "filepath": filepath})
-            return "CONTINUE", f"File written successfully: {filepath}"
-
-        else:
-            print(f"\n[Veltra AI] > {response_text}")
-            return "USER_INPUT_REQUIRED", None
-
-    except Exception as e:
-        print(f"\n[Error] > {e}")
-        log_audit({"status": "ERROR", "error": str(e)})
-        return (
-            "CONTINUE",
-            f"System Alert: Response parsing error ({e}). Respond ONLY in valid JSON.",
+        result = subprocess.run(
+            command_str,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=15
         )
+        output = result.stdout if result.stdout else result.stderr
+        return output.strip() if output else "Command executed successfully with no output."
+    except subprocess.TimeoutExpired:
+        return "[Error] Command execution timed out after 15 seconds."
+    except Exception as e:
+        return f"[Error] Subprocess execution failed: {str(e)}"
 
+SYSTEM_PROMPT = """
+You are Veltra AI Engine v1.0 MVP, an autonomous execution engine.
+Always respond in strict, valid JSON format using the exact schema below. Do not wrap output in markdown code blocks.
 
-while True:
-    user_input = input("\n[You] > ")
-    if user_input.lower().strip() in ["exit", "quit"]:
-        print("Shutting down Veltra AI Engine...")
-        break
+Schema:
+{
+  "thought": "Reasoning for the current step",
+  "action": "EXECUTE_SHELL_COMMAND" | "COMPLETE",
+  "command": "shell command to run (if action is EXECUTE_SHELL_COMMAND)"
+}
+"""
 
-    if not user_input.strip():
-        continue
+def parse_llm_json(raw_text: str) -> dict:
+    """Robust JSON parser that sanitizes markdown and repairs malformed LLM outputs."""
+    clean_str = raw_text.replace("```json", "").replace("```", "").strip()
+    try:
+        return json.loads(clean_str)
+    except json.JSONDecodeError as standard_err:
+        if HAS_JSON_REPAIR:
+            try:
+                repaired = repair_json(clean_str)
+                return json.loads(repaired)
+            except Exception:
+                pass
+        raise standard_err
 
-    conversation_history = [
+def run_agentic_loop(user_input: str, max_steps: int = 10):
+    """Main autonomous loop running task planning, guardrail check, and execution."""
+    print(f"\n[You] > {user_input}")
+    
+    messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_input},
+        {"role": "user", "content": f"Task: {user_input}"}
     ]
 
-    step_count = 0
-    max_steps = 10
-
-    while step_count < max_steps:
-        step_count += 1
-        print(f"\n--- [Autonomous Step {step_count}/{max_steps}] ---")
-
+    for step in range(1, max_steps + 1):
+        print(f"\n--- [Autonomous Step {step}/{max_steps}] ---")
+        
         try:
             response = client.chat.completions.create(
-                messages=conversation_history,
-                model="qwen/qwen3.8-27b",
-                max_tokens=500,
+                model="openai/gpt-oss-120b",
+                messages=messages,
+                temperature=0.1
             )
+            raw_response = response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"[Error] API Request failed: {e}")
+            break
 
-            bot_reply = response.choices[0].message.content
-            conversation_history.append({"role": "assistant", "content": bot_reply})
+        try:
+            parsed = parse_llm_json(raw_response)
+        except json.JSONDecodeError as e:
+            print(f"[Error] Failed to parse JSON response: {e}")
+            print(f"Raw Output: {raw_response}")
+            log_audit("JSON_PARSE_ERROR", f"Raw: {raw_response}")
+            print("[Veltra AI] Terminating loop due to invalid JSON schema response.")
+            break
 
-            status, feedback = parse_and_execute(bot_reply)
+        thought = parsed.get("thought", "")
+        action = parsed.get("action", "")
+        command = parsed.get("command", "")
 
-            if status in ["USER_INPUT_REQUIRED", "FINISHED"]:
+        if thought:
+            print(f"[Veltra Thought] > {thought}")
+
+        if action == "COMPLETE":
+            print("[Veltra AI] > Task execution completed successfully.")
+            log_audit("TASK_COMPLETE", user_input)
+            break
+
+        elif action == "EXECUTE_SHELL_COMMAND":
+            if not command:
+                print("[Error] Action EXECUTE_SHELL_COMMAND was requested but no command was provided.")
                 break
 
-            if feedback:
-                conversation_history.append({"role": "system", "content": feedback})
+            is_safe, flagged_subcmd = is_command_safe(command)
+            if not is_safe:
+                error_msg = f"SECURITY_BLOCK: Intercepted destructive command containing '{flagged_subcmd}' in: {command}"
+                print(f"[BLOCKED] > {error_msg}")
+                log_audit("SECURITY_VIOLATION", error_msg)
+                
+                messages.append({"role": "assistant", "content": raw_response})
+                messages.append({"role": "user", "content": f"System guardrail blocked command execution: {error_msg}"})
+                break
 
-        except Exception as e:
-            print(f"\n[API Exception] > {e}")
+            print(f"[Executing Command] > {command}")
+            log_audit("EXECUTE_COMMAND", command)
+            
+            exec_output = execute_shell_command(command)
+            print(f"[Output] >\n{exec_output}")
+
+            messages.append({"role": "assistant", "content": raw_response})
+            messages.append({"role": "user", "content": f"Command output:\n{exec_output}"})
+
+        else:
+            print(f"[Error] Unknown action type '{action}'. Terminating loop.")
+            break
+
+def main():
+    print("=" * 65)
+    print("VELTRA AI ENGINE v1.0 MVP - PROTOTYPE PRODUCTION READY")
+    print("System Architecture: Autonomous Loop | Guardrails | Audit Log")
+    print("=" * 65)
+
+    if not HAS_JSON_REPAIR:
+        print("[Note] Tip: Run 'pip install json-repair' for automatic JSON string healing.")
+
+    while True:
+        try:
+            user_prompt = input("\n[You] > ").strip()
+            if not user_prompt:
+                continue
+            if user_prompt.lower() in ["exit", "quit"]:
+                print("Exiting Veltra AI Engine.")
+                break
+            run_agentic_loop(user_prompt)
+        except KeyboardInterrupt:
+            print("\nSession interrupted. Exiting.")
             break
