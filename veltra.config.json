@@ -1,0 +1,13 @@
+{
+  "forbidden_patterns": [
+    "rm\\s+-rf\\s+/",
+    "rm\\s+-rf\\s+~",
+    "DROP TABLE",
+    "DELETE FROM"
+  ],
+  "chained_patterns": [
+    "&&",
+    "||",
+    ";"
+  ]
+}

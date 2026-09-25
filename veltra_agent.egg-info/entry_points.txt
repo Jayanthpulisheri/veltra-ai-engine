@@ -1,0 +1,2 @@
+[console_scripts]
+veltra = veltra_agent.cli:main

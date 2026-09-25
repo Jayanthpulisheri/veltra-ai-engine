@@ -1,0 +1,10 @@
+LICENSE
+pyproject.toml
+tests/test_guardrail.py
+veltra_agent/cli.py
+veltra_agent/guardrail.py
+veltra_agent.egg-info/PKG-INFO
+veltra_agent.egg-info/SOURCES.txt
+veltra_agent.egg-info/dependency_links.txt
+veltra_agent.egg-info/entry_points.txt
+veltra_agent.egg-info/top_level.txt
