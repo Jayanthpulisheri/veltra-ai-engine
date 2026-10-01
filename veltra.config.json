@@ -1,13 +1,22 @@
 {
-  "forbidden_patterns": [
-    "rm\\s+-rf\\s+/",
-    "rm\\s+-rf\\s+~",
-    "DROP TABLE",
-    "DELETE FROM"
-  ],
-  "chained_patterns": [
-    "&&",
-    "||",
-    ";"
-  ]
+  "version": "0.1.1",
+  "guardrails": {
+    "blocked_commands": [
+      "rm -rf /",
+      "mkfs",
+      "dd",
+      "> /dev/sda"
+    ],
+    "allowed_outbound_ports": [
+      80,
+      443
+    ],
+    "enforce_read_only_root": true,
+    "max_subprocess_timeout_seconds": 10
+  },
+  "logging": {
+    "enabled": true,
+    "log_file": "veltra_audit.log",
+    "format": "json"
+  }
 }

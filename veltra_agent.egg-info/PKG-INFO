@@ -1,9 +1,10 @@
 Metadata-Version: 2.4
 Name: veltra-agent
-Version: 0.1.0
-Summary: Deterministic local security guardrail for autonomous software agents.
-Author-email: Veltra AI Team <founders@veltra.ai>
-License: Apache-2.0
+Version: 0.4.0
+Summary: Deterministic guardrail, SIEM audit exporter, and subprocess firewall for autonomous AI agents
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE

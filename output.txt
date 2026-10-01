@@ -1,0 +1,1 @@
+[veltra] Policy verified. Intercepting execution: echo test

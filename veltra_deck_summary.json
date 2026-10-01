@@ -1,0 +1,18 @@
+{
+    "generated_at": "2026-09-29T13:42:06.873165+00:00",
+    "product": "veltra-agent",
+    "version": "0.1.5",
+    "summary": {
+        "total_intercepted_commands": 201,
+        "allowed_executions": 45,
+        "blocked_security_violations": 9,
+        "block_rate_pct": 4.48
+    },
+    "performance": {
+        "iterations": 5,
+        "avg_overhead_ms": 55.16,
+        "min_overhead_ms": 50.42,
+        "max_overhead_ms": 68.72
+    },
+    "policy_active": true
+}
