@@ -20,3 +20,16 @@
     "format": "json"
   }
 }
+{
+  "version": "0.4.0",
+  "guardrails": {
+    "blocked_commands": ["rm -rf", "mkfs", "dd", ":(){ :|:& };:"],
+    "allowed_outbound_ports": [80, 443],
+    "enforce_read_only_root": true,
+    "max_subprocess_timeout_seconds": 30
+  },
+  "logging": {
+    "enabled": true,
+    "log_file": "veltra_audit.log"
+  }
+}
