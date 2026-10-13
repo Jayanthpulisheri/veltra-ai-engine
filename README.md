@@ -1,27 +1,18 @@
-# Veltra AI Agent Guardrail (`veltra-agent`)
+# 🛡️ Veltra AI Agent Guardrail (veltra-agent)
 
-> **Sub-60ms deterministic firewall, sandbox, and real-time audit exporter for autonomous AI agents.**
+A lightweight, developer-first AI Security & Guardrail Middleware API designed to protect autonomous LLM agents and AI apps from prompt injections, sensitive data leaks, and runaway malicious loops[cite: 2].
 
-[![PyPI version](https://badge.fury.io/py/veltra-agent.svg)](https://badge.fury.io/py/veltra-agent)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Developers drop a single line of Python/JS code into their AI apps, and Veltra instantly inspects, sanitizes, and blocks dangerous prompts, API key leaks, or excessive token usage before they reach the LLM[cite: 2].
 
-`veltra-agent` intercepts subprocess execution in real-time, enforcing non-bypassable runtime policies to prevent autonomous LLM agents (LangChain, AutoGen, CrewAI, OpenAI Tool Calls) from running destructive shell commands, accessing read-only root directories, exfiltrating data, or leaking API keys.
+## 🚀 Key Features
 
----
+- **Prompt Injection Defense:** Instantly intercepts and blocks malicious jailbreak patterns and system overrides before they reach the model[cite: 2].
+- **Real-Time PII & API Key Redactor:** Automatically masks leaked API keys (`sk-...`, `AIza...`), emails, and sensitive data on the fly[cite: 2].
+- **Infinite Loop Circuit Breaker:** Hard-caps tool-calling iteration loops to prevent runaway credit exhaustion and unexpected cloud bills[cite: 2].
+- **Token Budget Guard:** Enforces strict per-session token limits to protect developer resources.
+- **Sub-60ms Latency:** Zero measurable overhead on agent workflows[cite: 10].
 
-## Key Features
-
-- **Sub-60ms Guardrail Latency**: Zero measurable overhead on agent workflows.
-- **Async Output Streaming**: Line-by-line execution streaming via `asyncio` without standard buffer delays.
-- **Dynamic Policy Hot-Reloading**: Update security rules in `veltra.config.json` on the fly without restarting agent processes.
-- **Docker Sandbox Fallback**: Optional containerized execution for high-risk untrusted tool executions.
-- **Enterprise SIEM Export**: Generate structured JSON security payloads ready for Datadog, Splunk, or AWS S3 ingestion.
-
----
-
-## Quick Start
-
-### Installation
+## 📦 Installation & Quickstart
 
 ```bash
 pip install veltra-agent
