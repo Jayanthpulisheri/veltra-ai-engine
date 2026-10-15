@@ -4,3 +4,8 @@ modules = ["python-3.11"]
 run = ["python", "-m", "uvicorn", "webhook_handler:app", "--host", "0.0.0.0", "--port", "8000"]
 build = ["pip", "install", "-r", "requirements.txt"]
 deploymentTarget = "cloudrun"
+
+[userenv]
+
+[userenv.shared]
+RESEND_API_KEY = "re_V2jgCvPZ_B4d694GG1EFmJibRnVnDvqhr"
