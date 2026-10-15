@@ -1,12 +1,12 @@
 {
-    "generated_at": "2026-09-29T13:42:06.873165+00:00",
+    "generated_at": "2026-10-01T15:45:03.956903+00:00",
     "product": "veltra-agent",
     "version": "0.1.5",
     "summary": {
-        "total_intercepted_commands": 201,
-        "allowed_executions": 45,
+        "total_intercepted_commands": 204,
+        "allowed_executions": 47,
         "blocked_security_violations": 9,
-        "block_rate_pct": 4.48
+        "block_rate_pct": 4.41
     },
     "performance": {
         "iterations": 5,
