@@ -1,54 +1,46 @@
-🛡️ Veltra AI Agent Guardrail (veltra-agent)
+🛡️ Veltra AI Engine
 
-A lightweight, developer-first AI Security & Guardrail Middleware API designed to protect autonomous LLM agents and AI apps from prompt injections, sensitive data leaks, and runaway malicious loops.
+> **Microsecond Pre-Execution Security Layer for AI Agents & CLI Automation**
 
-Developers drop a single line of Python/JS code into their AI apps, and Veltra instantly inspects, sanitizes, and blocks dangerous prompts, API key leaks, or excessive token usage before they reach the LLM.
+Veltra intercepts, inspects, and blocks malicious subshell execution payloads, prompt injection attacks, and unauthorized system tool calls before they run.
 
 ---
 
-## 🌐 Live API Endpoint
+## ⚡ Quickstart (Python)
 
-- **Base URL:** `https://veltra.is-a.dev`
+Protect your AI agent's tool execution loops in 3 lines of code:
 
-### Health Check
-
-```bash
-curl -L https://veltra.is-a.dev
-Response:
-
-JSON
-{
-  "status": "ok",
-  "service": "Veltra AI Security Engine"
-}
-🚀 Key Features
-Prompt Injection Defense: Instantly intercepts and blocks malicious jailbreak patterns and system overrides before they reach the model.
-
-Real-Time PII & API Key Redactor: Automatically masks leaked API keys (sk-..., AIza...), emails, and sensitive data on the fly.
-
-Infinite Loop Circuit Breaker: Hard-caps tool-calling iteration loops to prevent runaway credit exhaustion and unexpected cloud bills.
-
-Token Budget Guard: Enforces strict per-session token limits to protect developer resources.
-
-Sub-60ms Latency: Zero measurable overhead on agent workflows.
-
-📦 Installation & Quickstart
-Bash
-pip install veltra-agent
-Basic Usage (Python)
-Python
+```python
 import requests
 
-# Live Endpoint
-BASE_URL = https://veltra.is-a.dev
 
-response = requests.get(f"{BASE_URL}")
-print(response.json())
+def validate_agent_command(command: str, api_key: str) -> bool:
+    response = requests.post(
+        "[https://veltra-core--veltraofficiala.replit.app/api/v1/scan](https://veltra-core--veltraofficiala.replit.app/api/v1/scan)",
+        headers={"X-API-Key": api_key},
+        json={"command": command},
+    )
+    return response.status_code == 200
+🧪 Quick Test (cURL)
+Run a microsecond scan directly from your terminal:
 
----
+Bash
+curl -X POST [https://veltra-core--veltraofficiala.replit.app/api/v1/scan](https://veltra-core--veltraofficiala.replit.app/api/v1/scan) \
+  -H "X-API-Key: demo_key_xyz" \
+  -H "Content-Type: application/json" \
+  -d '{"command": "rm -rf /"}'
+Response Example
+JSON
+{
+  "status": "completed",
+  "result": {
+    "status": "SECURITY_VIOLATION",
+    "error": "Blocked by Veltra Guardrail: Matches forbidden pattern 'rm\\s+-rf'"
+  }
+}
+🌐 Endpoints & Resources
+Live Documentation: https://veltra.is-a.dev
 
-### Step-by-Step to Apply:
-1. Select all the code in the box above and copy it.
-2. In your GitHub editor (shown in your screenshot), select all existing text and delete it[cite: 13].
-3. Paste the copied markdown content[cite: 13].
-4. Click the green **Commit changes...** button at the top-right corner[cite: 13].
+API Base: https://veltra-core--veltraofficiala.replit.app
+
+Primary Scan Route: /api/v1/scan.
