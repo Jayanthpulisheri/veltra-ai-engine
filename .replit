@@ -9,3 +9,9 @@ deploymentTarget = "cloudrun"
 
 [userenv.shared]
 RESEND_API_KEY = "re_V2jgCvPZ_B4d694GG1EFmJibRnVnDvqhr"
+
+[[ports]]
+localPort = 8000
+
+[nix]
+packages = ["libxcrypt"]
